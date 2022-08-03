@@ -44,11 +44,15 @@ const MenuLink = styled(Link)`
 `;
 
 const menuItems = [
-  { text: "Event Types", to: "/event-types", icon: <EventRepeatIcon /> },
-  { text: "Events", to: "/events", icon: <EventIcon /> },
-  { text: "Bills", to: "/bills", icon: <ReceiptIcon /> },
-  { text: "Payments", to: "/payments", icon: <PaidIcon /> },
-  { text: "Users", to: "/users", icon: <GroupIcon /> },
+  {
+    text: "Event Types",
+    to: "/dashboard/event-types",
+    icon: <EventRepeatIcon />,
+  },
+  { text: "Events", to: "/dashboard/events", icon: <EventIcon /> },
+  { text: "Bills", to: "/dashboard/bills", icon: <ReceiptIcon /> },
+  { text: "Payments", to: "/dashboard/payments", icon: <PaidIcon /> },
+  { text: "Users", to: "/dashboard/users", icon: <GroupIcon /> },
 ];
 
 const HomeLayout = ({ children }) => {

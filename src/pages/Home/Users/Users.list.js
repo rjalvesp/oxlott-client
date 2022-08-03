@@ -3,17 +3,13 @@ import * as R from "ramda";
 import { DataGrid } from "@mui/x-data-grid";
 import { CircularProgress, IconButton } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
-import CheckIcon from "@mui/icons-material/Check";
-import ClearIcon from "@mui/icons-material/Clear";
 import { useNavigate } from "react-router-dom";
-import { EventTypesService } from "services/EventTypes.service";
-import { ActionRow, ConfirmModal, IconTextButton } from "components/UI";
+import { UsersService } from "services/Users.service";
+import { ConfirmModal } from "components/UI";
 import * as Datatable from "utils/datatable";
 
-const EventTypesList = () => {
-  const service = EventTypesService();
+const UsersList = () => {
+  const service = UsersService();
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
   const [datatable, setDatatable] = React.useState();
@@ -43,48 +39,12 @@ const EventTypesList = () => {
     {
       field: "name",
       headerName: "Name",
-      width: 180,
+      width: 400,
     },
     {
-      field: "frequency",
-      headerName: "Generation Frequency",
+      field: "email",
+      headerName: "Email",
       width: 180,
-    },
-    {
-      field: "elements",
-      headerName: "Elements",
-      width: 180,
-      type: "number",
-    },
-    {
-      field: "minValue",
-      headerName: "Min Value",
-      width: 180,
-    },
-    {
-      field: "maxValue",
-      headerName: "Max Value",
-      width: 180,
-    },
-    {
-      field: "defaultCost",
-      headerName: "Default Cost",
-      type: "number",
-      width: 180,
-    },
-    {
-      field: "defaultPrize",
-      headerName: "Default Prize",
-      type: "number",
-      width: 180,
-    },
-    {
-      field: "disabled",
-      headerName: "Enabled",
-      width: 180,
-      type: "boolean",
-      renderCell: ({ row: { disabled } }) =>
-        !disabled ? <CheckIcon /> : <ClearIcon />,
     },
     {
       field: "",
@@ -94,11 +54,8 @@ const EventTypesList = () => {
       filterable: false,
       renderCell: ({ row: { id } }) => (
         <>
-          <IconButton onClick={() => navigate(`/dashboard/event-types/${id}`)}>
+          <IconButton onClick={() => navigate(`/dashboard/users/${id}`)}>
             <VisibilityIcon />
-          </IconButton>
-          <IconButton onClick={() => setSelectedId(id)}>
-            <DeleteIcon />
           </IconButton>
         </>
       ),
@@ -115,15 +72,6 @@ const EventTypesList = () => {
 
   return (
     <>
-      <ActionRow>
-        <IconTextButton
-          variant="contained"
-          color="primary"
-          onClick={() => navigate("/dashboard/event-types/new")}
-        >
-          <AddIcon /> New
-        </IconTextButton>
-      </ActionRow>
       <DataGrid
         rows={datatable.data}
         rowCount={datatable.filteredTotal || datatable.total || 0}
@@ -149,4 +97,4 @@ const EventTypesList = () => {
   );
 };
 
-export default EventTypesList;
+export default UsersList;

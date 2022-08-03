@@ -25,13 +25,18 @@ export const CreateInstance = (entity) => {
     instance
       .get(`${entity}/${id}`)
       .then(R.propOr(null, "data"))
-      .then(R.unless(R.isNil, R.omit(["_id", "_rev", "type", "createdAt"])));
+      .then(R.when(R.is(Object), R.omit(["_id", "_rev", "type", "createdAt"])));
   instance.create = (body) =>
     instance.post(`${entity}`, body).then(R.propOr(null, "data"));
+  instance.createAt = (path, body) =>
+    instance.post(`${entity}/${path}`, body).then(R.propOr(null, "data"));
   instance.update = (id, body) =>
     instance.put(`${entity}/${id}`, body).then(R.propOr(null, "data"));
   instance.delete = (id) =>
     instance.delete(`${entity}/${id}`).then(R.propOr(null, "data"));
+
+  instance.customGet = (path) =>
+    instance.get(`${entity}/${path.join("/")}`).then(R.propOr(null, "data"));
 
   instance.updateToken = () => {
     instance.defaults.baseURL = process.env.REACT_APP_SERVER_URI;

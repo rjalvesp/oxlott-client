@@ -107,7 +107,7 @@ const EventsList = () => {
       filterable: false,
       renderCell: ({ row: { id } }) => (
         <>
-          <IconButton onClick={() => navigate(`/events/${id}`)}>
+          <IconButton onClick={() => navigate(`/dashboard/events/${id}`)}>
             <VisibilityIcon />
           </IconButton>
           <IconButton onClick={() => setSelectedId(id)}>
@@ -132,7 +132,7 @@ const EventsList = () => {
         <IconTextButton
           variant="contained"
           color="primary"
-          onClick={() => navigate("/events/new")}
+          onClick={() => navigate("/dashboard/events/new")}
         >
           <AddIcon /> New
         </IconTextButton>

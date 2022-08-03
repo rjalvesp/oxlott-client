@@ -24,12 +24,14 @@ import {
   Text,
 } from "components/UI";
 import { EventTypesService } from "services/EventTypes.service";
+import { AssetsService } from "services/Assets.service";
 import {
   isFormValid,
   validateString,
   validateNumber,
   validateTimeSpan,
 } from "utils/validators";
+import FileUpload from "react-material-file-upload";
 
 const defaultInitialValues = {
   name: "",
@@ -96,12 +98,14 @@ const durationInputs = [
 
 const EventTypesForm = () => {
   const service = EventTypesService();
+  const assetsService = AssetsService();
   const navigate = useNavigate();
   const { id } = useParams();
   const [initialValues, setInitialValues] = React.useState(null);
+  const [, setImages] = React.useState({ image: "" });
   const [loading, setLoading] = React.useState(true);
 
-  const goBack = () => navigate("/event-types");
+  const goBack = () => navigate("/dashboard/event-types");
 
   const validate = (values) => {
     const errors = R.pipe(
@@ -126,6 +130,42 @@ const EventTypesForm = () => {
   const onSubmit = (values, { setSubmitting }) => {
     const fn = id ? service.create(values) : service.update(id, values);
     Promise.resolve(fn).finally(() => setSubmitting(true));
+  };
+
+  const handleFileUpload = (handleChange) => {
+    return ([file]) => {
+      if (!file) {
+        return;
+      }
+      const reader = new window.FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const payload = {
+          content: reader.result,
+          type: R.pipe(
+            R.split(":"),
+            R.propOr("", 1),
+            R.split(";"),
+            R.head
+          )(reader.result),
+        };
+        assetsService
+          .createAt("event-types", payload)
+          .then(R.propOr(reader.result, "Key"))
+          .then((Key) =>
+            assetsService.getById(Key).then((value) => {
+              setImages({ image: value });
+              handleChange({
+                target: {
+                  id: "image",
+                  name: "image",
+                  value: `${process.env.SERVER_URI}${Key}`,
+                },
+              });
+            })
+          );
+      };
+    };
   };
 
   React.useEffect(() => {
@@ -166,6 +206,9 @@ const EventTypesForm = () => {
             </Grid>
             <Grid item xs={12}>
               <Text>Data</Text>
+            </Grid>
+            <Grid item xs={12}>
+              <FileUpload onChange={handleFileUpload(handleChange)} />
             </Grid>
             {baseInputs.map((input) => (
               <Grid item xs={4} key={`${input.field}-error-text`}>
@@ -228,14 +271,17 @@ const EventTypesForm = () => {
                                   },
                                 })
                               }
-                              renderInput={(params) => (
-                                <Input
-                                  {...params}
-                                  name={`at.${index}.start`}
-                                  value={value.start}
-                                  required
-                                />
-                              )}
+                              renderInput={(params) => {
+                                console.log(params, value);
+                                return (
+                                  <Input
+                                    {...params}
+                                    name={`at.${index}.start`}
+                                    value={value.start}
+                                    required
+                                  />
+                                );
+                              }}
                             />
                           </LocalizationProvider>
                         </FormControl>
@@ -252,7 +298,6 @@ const EventTypesForm = () => {
                               {...duration}
                               name={`at.${index}.duration.${duration.name}`}
                               value={value.duration[duration.name]}
-                              required
                             />
                           </FormControl>
                         </Grid>
