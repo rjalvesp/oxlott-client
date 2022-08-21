@@ -12,11 +12,14 @@ const Negotiate = () => {
     getAccessTokenSilently()
       .then((value) => {
         // eslint-disable-next-line no-undef
-        localStorage.setItem("token", value);
+        console.log(value);
+        window.localStorage.setItem("token", value);
         return value;
       })
       .then(parseJwt)
+      .then(R.tap(console.log))
       .then(R.propOr([], "permissions"))
+      .then(R.tap(console.log))
       .then(
         R.ifElse(
           R.includes("admin"),

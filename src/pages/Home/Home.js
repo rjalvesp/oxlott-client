@@ -6,9 +6,8 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { routes } from "./Home.routes";
 
 const Home = () => {
-  const { isAuthenticated, logout } = useAuth0();
-
-  if (!isAuthenticated) {
+  const { isAuthenticated, isLoading, logout } = useAuth0();
+  if (!isAuthenticated && !isLoading) {
     logout();
     return <CircularProgress />;
   }

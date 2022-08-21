@@ -1,21 +1,17 @@
 import React from "react";
-import dayjs from "dayjs";
 import * as R from "ramda";
+import dayjs from "dayjs";
 import { DataGrid } from "@mui/x-data-grid";
 import { CircularProgress, IconButton } from "@mui/material";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
-import CheckIcon from "@mui/icons-material/Check";
-import ClearIcon from "@mui/icons-material/Clear";
 import { useNavigate } from "react-router-dom";
-import { EventsService } from "services/Events.service";
-import { ActionRow, ConfirmModal, IconTextButton } from "components/UI";
+import { PaymentsService } from "services/Payments.service";
+import { ConfirmModal } from "components/UI";
 import * as Datatable from "utils/datatable";
 import { Currency } from "utils/currency";
 
-const EventsList = () => {
-  const service = EventsService();
+const PaymentsList = () => {
+  const service = PaymentsService();
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(true);
   const [datatable, setDatatable] = React.useState();
@@ -34,14 +30,7 @@ const EventsList = () => {
         ...R.pipe(
           R.defaultTo([]),
           Datatable.transformInvertedBoolean("disabled"),
-          Datatable.getFiltering,
-          R.when(
-            R.hasPath(["selector", "winnerBill"]),
-            R.over(
-              R.lensPath(["selector", "winnerBill"]),
-              (value) => value === "true"
-            )
-          )
+          Datatable.getFiltering
         )(filtering),
       })
       .then(setDatatable)
@@ -50,57 +39,31 @@ const EventsList = () => {
 
   const columns = [
     {
-      field: "name",
-      headerName: "Name",
+      field: "user.email",
+      headerName: "User Email",
       width: 180,
+      renderCell: ({ row: { user } }) => R.propOr("", "email", user),
     },
     {
-      field: "from",
-      headerName: "From",
-      type: "dateTime",
-      width: 250,
-      renderCell: ({ row: { from } }) => dayjs(from).format("LLL"),
-    },
-    {
-      field: "to",
-      headerName: "To",
-      type: "dateTime",
-      width: 250,
-      renderCell: ({ row: { to } }) => dayjs(to).format("LLL"),
-    },
-    {
-      field: "cost",
-      headerName: "Cost",
-      type: "number",
+      field: "amountSubtotal",
+      headerName: "Sub-Total",
       width: 180,
-      renderCell: ({ row: { cost } }) => Currency(cost || 0 / 100),
+      renderCell: ({ row: { amountSubtotal } }) =>
+        Currency((amountSubtotal || 0) / 100),
     },
     {
-      field: "prize",
-      headerName: "Prize",
-      type: "number",
+      field: "amountTotal",
+      headerName: "Total",
       width: 180,
-      renderCell: ({ row: { prize } }) => Currency(prize || 0 / 100),
+      renderCell: ({ row: { amountTotal } }) =>
+        Currency((amountTotal || 0) / 100),
     },
     {
-      field: "disabled",
-      headerName: "Enabled",
-      type: "boolean",
-      width: 180,
-      renderCell: ({ row: { disabled } }) =>
-        !disabled ? <CheckIcon /> : <ClearIcon />,
-    },
-    {
-      field: "winnerBill",
-      headerName: "Has Winner",
-      width: 180,
-      type: "boolean",
-      renderCell: ({ row: { winnerBill } }) =>
-        Boolean(winnerBill) || !R.isEmpty(winnerBill) ? (
-          <ClearIcon />
-        ) : (
-          <CheckIcon />
-        ),
+      field: "createdAt",
+      headerName: "Created At",
+      width: 200,
+      renderCell: ({ row: { createdAt } }) =>
+        createdAt ? dayjs(createdAt).format("LLL") : "",
     },
     {
       field: "",
@@ -110,11 +73,8 @@ const EventsList = () => {
       filterable: false,
       renderCell: ({ row: { id } }) => (
         <>
-          <IconButton onClick={() => navigate(`/dashboard/events/${id}`)}>
+          <IconButton onClick={() => navigate(`/dashboard/payments/${id}`)}>
             <VisibilityIcon />
-          </IconButton>
-          <IconButton onClick={() => setSelectedId(id)}>
-            <DeleteIcon />
           </IconButton>
         </>
       ),
@@ -131,15 +91,6 @@ const EventsList = () => {
 
   return (
     <>
-      <ActionRow>
-        <IconTextButton
-          variant="contained"
-          color="primary"
-          onClick={() => navigate("/dashboard/events/new")}
-        >
-          <AddIcon /> New
-        </IconTextButton>
-      </ActionRow>
       <DataGrid
         rows={datatable.data}
         rowCount={datatable.filteredTotal || datatable.total || 0}
@@ -150,7 +101,7 @@ const EventsList = () => {
         paginationMode="server"
         sortingMode="server"
         filterMode="server"
-        onFilterModelChange={({ items }) => setFiltering(items[0])}
+        onFilterModelChange={({ items }) => setFiltering(items)}
         onSortModelChange={(sortingItem) => setSorting(sortingItem[0])}
         onPageChange={({ page }) => setPage(page)}
         loading={loading}
@@ -165,4 +116,4 @@ const EventsList = () => {
   );
 };
 
-export default EventsList;
+export default PaymentsList;

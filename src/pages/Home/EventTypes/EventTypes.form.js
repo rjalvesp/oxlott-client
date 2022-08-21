@@ -3,10 +3,13 @@ import * as R from "ramda";
 import { useParams, useNavigate } from "react-router-dom";
 import { Formik, FieldArray } from "formik";
 import {
+  Button,
+  Card,
   CircularProgress,
   FormControlLabel,
   Grid,
   IconButton,
+  Modal,
   Switch,
 } from "@mui/material";
 import { LocalizationProvider, TimePicker } from "@mui/lab";
@@ -32,12 +35,14 @@ import {
   validateTimeSpan,
 } from "utils/validators";
 import FileUpload from "react-material-file-upload";
+import dayjs from "dayjs";
+import ModalBox from "components/UI/ModalBox";
 
 const defaultInitialValues = {
   name: "",
   defaultCost: 0,
   defaultPrize: 0,
-  at: [{ name: "", duration: { minutes: 0, hours: 0, days: 0 } }],
+  at: [{ start: "", duration: { minutes: 0, hours: 0, days: 0 } }],
 };
 
 const baseInputs = [
@@ -67,17 +72,17 @@ const baseInputs = [
     extra: {
       required: true,
       minLength: 1,
-      maxLength: 3,
+      maxLength: 4,
       pattern: "([0-9])|([0-9][0-9])|([0-9][0-9][0-9])",
     },
   },
   {
     field: "maxValue",
-    label: "maxValue",
+    label: "Maximum Value",
     extra: {
       required: true,
       minLength: 1,
-      maxLength: 3,
+      maxLength: 4,
       pattern: "([0-9])|([0-9][0-9])|([0-9][0-9][0-9])",
     },
   },
@@ -102,7 +107,8 @@ const EventTypesForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [initialValues, setInitialValues] = React.useState(null);
-  const [, setImages] = React.useState({ image: "" });
+  const [images, setImages] = React.useState({ image: "" });
+  const [imageModal, setImageModal] = React.useState("");
   const [loading, setLoading] = React.useState(true);
 
   const goBack = () => navigate("/dashboard/event-types");
@@ -121,15 +127,29 @@ const EventTypesForm = () => {
         )(extra)
       ),
       R.mergeAll,
-      R.assoc("at", validateTimeSpan(values.at, "Event Moment"))
+      R.assoc("code", validateTimeSpan(values.at, "Event Moment"))
     )(baseInputs);
 
     return isFormValid(errors) ? null : errors;
   };
 
   const onSubmit = (values, { setSubmitting }) => {
-    const fn = id ? service.create(values) : service.update(id, values);
-    Promise.resolve(fn).finally(() => setSubmitting(true));
+    const payload = R.over(
+      R.lensProp("at"),
+      R.pipe(
+        R.defaultTo([]),
+        R.map(
+          R.over(
+            R.lensProp("start"),
+            R.pipe(R.defaultTo(dayjs()), (value) => value.format())
+          )
+        )
+      ),
+      values
+    );
+    const fn = id ? service.create(payload) : service.update(id, payload);
+    setSubmitting(true);
+    Promise.resolve(fn).finally(() => setSubmitting(false));
   };
 
   const handleFileUpload = (handleChange) => {
@@ -155,6 +175,7 @@ const EventTypesForm = () => {
           .then((Key) =>
             assetsService.getById(Key).then((value) => {
               setImages({ image: value });
+              setImageModal("");
               handleChange({
                 target: {
                   id: "image",
@@ -168,6 +189,30 @@ const EventTypesForm = () => {
     };
   };
 
+  const transformInitialValues = R.over(
+    R.lensProp("at"),
+    R.pipe(
+      R.defaultTo([]),
+      R.map(
+        R.pipe(
+          R.over(R.lensPath(["duration", "hours"]), R.defaultTo(0)),
+          R.over(R.lensPath(["duration", "days"]), R.defaultTo(0)),
+          R.over(R.lensPath(["duration", "minutes"]), R.defaultTo(0)),
+          R.over(
+            R.lensProp("start"),
+            R.ifElse(
+              R.is(String),
+              (value) => {
+                return dayjs(new Date(`2020-01-01 ${value}`));
+              },
+              R.defaultTo(dayjs())
+            )
+          )
+        )
+      )
+    )
+  );
+
   React.useEffect(() => {
     setLoading(true);
     if (!id) {
@@ -176,12 +221,28 @@ const EventTypesForm = () => {
       return;
     }
 
-    service.getById(id).then(setInitialValues).catch(goBack);
+    service
+      .getById(id)
+      .then(transformInitialValues)
+      .then(async (value) => {
+        if (value.image) {
+          if (R.propOr("", "image", value).startsWith("http")) {
+            setImages({ image: value.image });
+          } else {
+            await assetsService.getById(value.image).then((data) => {
+              setImages({ image: data });
+            });
+          }
+        }
+        setInitialValues(value);
+      })
+      .catch(goBack);
   }, [id]);
 
   if (!initialValues && loading) {
     return <CircularProgress color="primary" />;
   }
+
   return (
     <Formik
       initialValues={initialValues || {}}
@@ -208,7 +269,15 @@ const EventTypesForm = () => {
               <Text>Data</Text>
             </Grid>
             <Grid item xs={12}>
-              <FileUpload onChange={handleFileUpload(handleChange)} />
+              <Text>Image</Text>
+              {images.image ? (
+                <Button type="button" onClick={() => setImageModal("view")}>
+                  View
+                </Button>
+              ) : null}
+              <Button type="button" onClick={() => setImageModal("change")}>
+                Change
+              </Button>
             </Grid>
             {baseInputs.map((input) => (
               <Grid item xs={4} key={`${input.field}-error-text`}>
@@ -234,7 +303,7 @@ const EventTypesForm = () => {
               <FormControlLabel
                 control={
                   <Switch
-                    checked={!R.isEmpty(values.disabled)}
+                    checked={Boolean(values.disabled)}
                     name="disabled"
                     onChange={handleChange}
                   />
@@ -271,13 +340,12 @@ const EventTypesForm = () => {
                                   },
                                 })
                               }
+                              value={value.start}
                               renderInput={(params) => {
-                                console.log(params, value);
                                 return (
                                   <Input
                                     {...params}
                                     name={`at.${index}.start`}
-                                    value={value.start}
                                     required
                                   />
                                 );
@@ -297,7 +365,7 @@ const EventTypesForm = () => {
                               type="number"
                               {...duration}
                               name={`at.${index}.duration.${duration.name}`}
-                              value={value.duration[duration.name]}
+                              value={value.duration[duration.name] || 0}
                             />
                           </FormControl>
                         </Grid>
@@ -350,6 +418,18 @@ const EventTypesForm = () => {
               <SaveIcon /> Save
             </IconTextButton>
           </ActionGrid>
+          <Modal open={imageModal} onClose={() => setImageModal("")}>
+            <ModalBox>
+              <Card variant="outlined">
+                {imageModal === "change" ? (
+                  <FileUpload onChange={handleFileUpload(handleChange)} />
+                ) : null}
+                {imageModal === "view" ? (
+                  <img src={images.image} width="400" height="300" />
+                ) : null}
+              </Card>
+            </ModalBox>
+          </Modal>
         </Form>
       )}
     </Formik>

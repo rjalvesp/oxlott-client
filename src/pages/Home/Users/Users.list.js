@@ -47,6 +47,16 @@ const UsersList = () => {
       width: 180,
     },
     {
+      field: "legal_id",
+      headerName: "Legal ID",
+      width: 180,
+    },
+    {
+      field: "bankAccount",
+      headerName: "Bank Account",
+      width: 180,
+    },
+    {
       field: "",
       headerName: "",
       sortable: false,

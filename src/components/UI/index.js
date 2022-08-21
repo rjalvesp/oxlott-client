@@ -8,3 +8,5 @@ export { default as IconTextButton } from "./IconTextButton";
 export { default as Input } from "./Input";
 export { default as Main } from "./Main";
 export { default as Text } from "./Text";
+export { default as ReferenceLink } from "./ReferenceLink";
+export { default as LinkedRow } from "./LinkedRow";
